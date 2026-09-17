@@ -1,0 +1,272 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice & Receipt Fraud Detector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center py-10 px-4">
+
+  <!-- Header -->
+  <div class="max-w-4xl w-full text-center mb-8">
+    <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-3">
+      <i data-lucide="shield-check" class="w-4 h-4"></i> AI Document Integrity & Forensic Guard
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+      Receipt & Invoice Fraud Detector
+    </h1>
+    <p class="text-sm text-slate-400 mt-2 max-w-lg mx-auto">
+      Upload any invoice or receipt to immediately detect whether it is real or fake, calculate the fraud risk percentage, and get the exact reasons to report it.
+    </p>
+  </div>
+
+  <div class="max-w-4xl w-full space-y-6">
+
+    <!-- Upload Box -->
+    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 shadow-xl backdrop-blur">
+      <div id="dropZone" class="border-2 border-dashed border-slate-600 hover:border-blue-500 transition-colors rounded-xl p-8 text-center cursor-pointer bg-slate-900/40 group">
+        <input type="file" id="fileInput" class="hidden" accept="image/*" />
+        <div class="w-14 h-14 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-400 group-hover:scale-105 transition mb-3">
+          <i data-lucide="upload" class="w-7 h-7"></i>
+        </div>
+        <p class="text-base font-semibold text-white">Click or drag & drop an invoice or receipt here</p>
+        <p class="text-xs text-slate-400 mt-1">Supports PNG, JPG, JPEG (Max 15MB)</p>
+      </div>
+
+      <!-- Quick Test Sample Buttons -->
+      <div class="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-slate-700/60">
+        <span class="text-xs font-medium text-slate-400">Or try a test sample:</span>
+        <button onclick="scanSample('genuine')" class="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Genuine Sample
+        </button>
+        <button onclick="scanSample('fake')" class="px-3.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+          <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i> Fake / Altered Sample
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingBox" class="hidden bg-slate-800/80 border border-slate-700 rounded-2xl p-10 text-center shadow-xl">
+      <div class="w-12 h-12 mx-auto rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin mb-3"></div>
+      <p class="text-sm font-semibold text-white">Auditing Document...</p>
+      <p class="text-xs text-slate-400 mt-1">Checking mathematics, paper grain, compression, and AI tampering traces</p>
+    </div>
+
+    <!-- Result Card -->
+    <div id="resultCard" class="hidden space-y-6">
+
+      <!-- Fraud Percentage Banner -->
+      <div id="verdictBanner" class="p-6 rounded-2xl border shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <div id="verdictIconBox" class="w-16 h-16 rounded-2xl flex items-center justify-center text-white shrink-0">
+            <i id="verdictIcon" data-lucide="shield-alert" class="w-9 h-9"></i>
+          </div>
+          <div>
+            <div id="verdictBadge" class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block mb-1">
+              STATUS
+            </div>
+            <h2 id="verdictTitle" class="text-2xl font-black tracking-tight text-white">
+              Fraud Assessment
+            </h2>
+            <p id="verdictSummary" class="text-xs text-slate-300 mt-1 max-w-lg"></p>
+          </div>
+        </div>
+
+        <div class="text-center sm:text-right shrink-0 bg-slate-950/40 p-4 rounded-xl border border-white/5">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Fakeness / Fraud Risk</div>
+          <div id="fraudPctText" class="text-4xl font-extrabold mono text-white mt-0.5">0%</div>
+        </div>
+      </div>
+
+      <!-- Reasons to Report as Fake -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-xl">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+          <i data-lucide="flag" class="w-4 h-4 text-red-400"></i> Reasons to Report as Fake
+        </h3>
+        <div id="reasonsList" class="space-y-2.5">
+          <!-- Dynamic reason cards injected here -->
+        </div>
+      </div>
+
+      <!-- Document Preview with Highlight Toggle -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 shadow-xl">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <i data-lucide="image" class="w-4 h-4 text-blue-400"></i> Document Preview
+          </h3>
+          <div class="flex items-center gap-2 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-medium">
+            <button id="btnHighlight" onclick="toggleHighlight(true)" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow">
+              Show Tampered Areas
+            </button>
+            <button id="btnOriginal" onclick="toggleHighlight(false)" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">
+              Show Original
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 flex items-center justify-center min-h-[400px]">
+          <img id="previewImg" src="" alt="Document Preview" class="max-h-[600px] object-contain rounded-lg shadow-lg" />
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    let scanData = null;
+    let showingHighlight = true;
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-blue-500'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-blue-500');
+      if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) uploadFile(e.target.files[0]);
+    });
+
+    async function uploadFile(file) {
+      showLoading();
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const resp = await fetch('/api/scan', { method: 'POST', body: formData });
+        const data = await resp.json();
+        renderResult(data);
+      } catch (err) {
+        alert('Scan error: ' + err);
+        hideLoading();
+      }
+    }
+
+    async function scanSample(type) {
+      showLoading();
+      try {
+        const resp = await fetch(`/api/scan-sample/${type}`);
+        const data = await resp.json();
+        renderResult(data);
+      } catch (err) {
+        alert('Sample error: ' + err);
+        hideLoading();
+      }
+    }
+
+    function showLoading() {
+      document.getElementById('resultCard').classList.add('hidden');
+      document.getElementById('loadingBox').classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loadingBox').classList.add('hidden');
+    }
+
+    function renderResult(data) {
+      hideLoading();
+      scanData = data;
+      document.getElementById('resultCard').classList.remove('hidden');
+
+      const banner = document.getElementById('verdictBanner');
+      const badge = document.getElementById('verdictBadge');
+      const iconBox = document.getElementById('verdictIconBox');
+      const icon = document.getElementById('verdictIcon');
+      const title = document.getElementById('verdictTitle');
+      const summary = document.getElementById('verdictSummary');
+      const fraudPctText = document.getElementById('fraudPctText');
+
+      fraudPctText.textContent = data.fraud_percentage + '%';
+      summary.textContent = data.summary;
+      title.textContent = data.status_label;
+
+      if (data.verdict === 'GENUINE') {
+        banner.className = 'p-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/25 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6';
+        badge.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block mb-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        badge.textContent = 'AUTHENTIC DOCUMENT';
+        iconBox.className = 'w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-600/30';
+        icon.setAttribute('data-lucide', 'badge-check');
+        fraudPctText.className = 'text-4xl font-extrabold mono text-emerald-400 mt-0.5';
+      } else if (data.verdict === 'SUSPICIOUS') {
+        banner.className = 'p-6 rounded-2xl border border-amber-500/30 bg-amber-950/25 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6';
+        badge.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block mb-1 bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        badge.textContent = 'SUSPICIOUS / AUDIT NEEDED';
+        iconBox.className = 'w-16 h-16 rounded-2xl bg-amber-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-amber-600/30';
+        icon.setAttribute('data-lucide', 'alert-triangle');
+        fraudPctText.className = 'text-4xl font-extrabold mono text-amber-400 mt-0.5';
+      } else {
+        banner.className = 'p-6 rounded-2xl border border-red-500/30 bg-red-950/25 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6';
+        badge.className = 'text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-block mb-1 bg-red-500/20 text-red-400 border border-red-500/30';
+        badge.textContent = 'CRITICAL FRAUD';
+        iconBox.className = 'w-16 h-16 rounded-2xl bg-red-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-red-600/30';
+        icon.setAttribute('data-lucide', 'shield-alert');
+        fraudPctText.className = 'text-4xl font-extrabold mono text-red-400 mt-0.5';
+      }
+
+      // Populate Reasons List
+      const reasonsList = document.getElementById('reasonsList');
+      reasonsList.innerHTML = '';
+
+      if (!data.reasons.length) {
+        reasonsList.innerHTML = `
+          <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-emerald-300 text-xs flex items-center gap-3">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+            <div>
+              <div class="font-bold text-emerald-200">No Reasons to Report</div>
+              <div class="text-slate-400 mt-0.5">The document has valid math calculations, consistent paper grain & font geometry, and is not a duplicate.</div>
+            </div>
+          </div>
+        `;
+      } else {
+        data.reasons.forEach((r, idx) => {
+          reasonsList.innerHTML += `
+            <div class="p-3.5 rounded-xl bg-red-950/30 border border-red-800/50 text-xs flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400 font-bold shrink-0 mt-0.5">
+                ${idx + 1}
+              </div>
+              <div>
+                <div class="font-bold text-red-300 text-sm">${r.title}</div>
+                <div class="text-slate-300 mt-0.5 leading-relaxed">${r.explanation}</div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      toggleHighlight(true);
+      lucide.createIcons();
+    }
+
+    function toggleHighlight(highlight) {
+      if (!scanData) return;
+      showingHighlight = highlight;
+      const img = document.getElementById('previewImg');
+      const btnH = document.getElementById('btnHighlight');
+      const btnO = document.getElementById('btnOriginal');
+
+      if (highlight) {
+        img.src = scanData.image_highlighted;
+        btnH.className = 'px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow';
+        btnO.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white';
+      } else {
+        img.src = scanData.image_original;
+        btnO.className = 'px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow';
+        btnH.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Datasets & extracted data
+data/raw/
+data/manipulated/
+data/ocr_extracted/
+data/samples/
+data/*.csv
+data/*.db
+data/audit_ledger.db
+
+# User uploads
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Virtual environments
+venv/
+.env
+env/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
