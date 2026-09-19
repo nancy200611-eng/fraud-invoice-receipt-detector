@@ -53,13 +53,13 @@ def analyze_receipt(image_path):
     
     if verdict == "GENUINE":
         color = "#10b981"
-        status_icon = "?"
+        status_icon = "\u2705"
     elif verdict == "HIGH_FRAUD_RISK":
         color = "#ef4444"
-        status_icon = "??"
+        status_icon = "\U0001F6A8"
     else:
         color = "#f59e0b"
-        status_icon = "??"
+        status_icon = "\u26A0\uFE0F"
 
     summary_html = f"""
     <div style="background-color: {color}15; border-left: 6px solid {color}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
@@ -71,9 +71,9 @@ def analyze_receipt(image_path):
 
     # Reasons list markdown
     reasons = res.get("reasons", [])
-    reasons_md = "### ?? Forensic Findings & Reasons\n"
+    reasons_md = "### \U0001F50D Forensic Findings & Reasons\n"
     if not reasons:
-        reasons_md += "? No suspicious tampering or anomalies detected. The document passed all verification checks.\n"
+        reasons_md += "\u2713 No suspicious tampering or anomalies detected. The document passed all verification checks.\n"
     else:
         for r in reasons:
             sev = r.get("severity", "INFO")
@@ -83,11 +83,11 @@ def analyze_receipt(image_path):
 
     # Parsed fields
     parsed = res.get("parsed_fields", {})
-    reasons_md += "\n### ?? Extracted Document Details\n"
-    reasons_md += f"- **Invoice Number**: {parsed.get('invoice_number') or 'N/A'}\n"
-    reasons_md += f"- **Subtotal**: {parsed.get('subtotal') or 'N/A'}\n"
-    reasons_md += f"- **Tax**: {parsed.get('tax') or 'N/A'}\n"
-    reasons_md += f"- **Total**: {parsed.get('total') or 'N/A'}\n"
+    reasons_md += "\n### \U0001F9FE Extracted Document Details\n"
+    reasons_md += f"- **Invoice Number**: `{parsed.get('invoice_number') or 'N/A'}`\n"
+    reasons_md += f"- **Subtotal**: `{parsed.get('subtotal') or 'N/A'}`\n"
+    reasons_md += f"- **Tax**: `{parsed.get('tax') or 'N/A'}`\n"
+    reasons_md += f"- **Total**: `{parsed.get('total') or 'N/A'}`\n"
 
     return overlay_img, summary_html, reasons_md
 
