@@ -17,6 +17,13 @@ if BASE_DIR not in sys.path:
 
 from src.backend.main import process_document
 
+try:
+    import spaces
+    gpu_decorator = spaces.GPU
+except Exception:
+    def gpu_decorator(fn):
+        return fn
+
 def b64_to_rgb(b64_str):
     if not b64_str:
         return None
@@ -29,6 +36,7 @@ def b64_to_rgb(b64_str):
         return None
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
+@gpu_decorator
 def analyze_receipt(image_path):
     if not image_path or not os.path.exists(image_path):
         return None, "<div style='color:red;'>?? Please upload an invoice or receipt image.</div>", ""
