@@ -1,4 +1,14 @@
-﻿# 🛡️ End-to-End Fraud Invoice & Receipt Detection Platform
+---
+title: Invoice Fraud Detector
+emoji: 🛡️
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+app_file: app.py
+pinned: false
+---
+
+# 🛡️ End-to-End Fraud Invoice & Receipt Detection Platform
 
 An enterprise-grade document forensics and tampering detection system combining **Deep Learning (ResNet-18 + Grad-CAM)**, **Digital Image Forensics (Error Level Analysis - ELA & SRM high-pass filter residuals)**, **Optical Character Recognition (EasyOCR)**, and **Heuristic Business Rule Auditing**.
 
