@@ -83,11 +83,16 @@ def analyze_receipt(image_path):
 
     # Parsed fields
     parsed = res.get("parsed_fields", {})
+    subtotal_val = f"${parsed['subtotal']:.2f}" if parsed.get('subtotal') is not None else "N/A (Not Itemized)"
+    tax_val = f"${parsed['tax']:.2f}" if parsed.get('tax') is not None else "N/A (Not Itemized)"
+    total_val = f"${parsed['total']:.2f}" if parsed.get('total') is not None else "N/A"
+    inv_val = parsed.get('invoice_number') or "N/A"
+
     reasons_md += "\n### \U0001F9FE Extracted Document Details\n"
-    reasons_md += f"- **Invoice Number**: `{parsed.get('invoice_number') or 'N/A'}`\n"
-    reasons_md += f"- **Subtotal**: `{parsed.get('subtotal') or 'N/A'}`\n"
-    reasons_md += f"- **Tax**: `{parsed.get('tax') or 'N/A'}`\n"
-    reasons_md += f"- **Total**: `{parsed.get('total') or 'N/A'}`\n"
+    reasons_md += f"- **Invoice / Receipt #**: `{inv_val}`\n"
+    reasons_md += f"- **Subtotal**: `{subtotal_val}`\n"
+    reasons_md += f"- **Tax (VAT/GST)**: `{tax_val}`\n"
+    reasons_md += f"- **Total Amount**: `{total_val}`\n"
 
     return overlay_img, summary_html, reasons_md
 

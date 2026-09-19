@@ -67,31 +67,46 @@ class HeuristicAuditEngine:
         total = None
         invoice_number = None
 
-        inv_pattern = re.compile(r"INV[-\d\w]+", re.IGNORECASE)
+        id_patterns = [
+            re.compile(r"(?:INV(?:OICE)?|RCPT|RECEIPT|BILL|ORDER|CHECK|TICKET|TRANS(?:ACTION)?)\s*[:#\.\-]?\s*([A-Z0-9\-_]{3,20})", re.IGNORECASE),
+            re.compile(r"#\s*([A-Z0-9\-_]{4,15})", re.IGNORECASE),
+            re.compile(r"\b(INV[-\d\w]+)\b", re.IGNORECASE),
+        ]
+
+        subtotal_keywords = ["SUBTOTAL", "SUB TOTAL", "SUB-TOTAL", "NET AMOUNT", "NET AMT", "TOTAL BEFORE TAX", "SUB TOT"]
+        tax_keywords = ["TAX", "VAT", "GST", "HST", "PST", "SALES TAX", "CGST", "SGST", "IGST", "TAX AMOUNT"]
+        total_keywords = ["TOTAL DUE", "GRAND TOTAL", "BALANCE DUE", "AMOUNT DUE", "NET PAYABLE", "TOTAL AMOUNT", "TOTAL"]
 
         for idx, t in enumerate(tokens):
             text = t.get("text", "")
-            if not invoice_number:
-                inv_match = inv_pattern.search(text)
-                if inv_match:
-                    invoice_number = inv_match.group(0)
-
             upper_text = text.upper()
-            if "SUBTOTAL" in upper_text or "SUB TOTAL" in upper_text:
+
+            # Search document/receipt identifier
+            if not invoice_number:
+                for pat in id_patterns:
+                    m = pat.search(text)
+                    if m:
+                        invoice_number = m.group(1) if m.groups() else m.group(0)
+                        break
+
+            # Search Subtotal
+            if any(k in upper_text for k in subtotal_keywords):
                 val = self._parse_amount(text)
                 if val is None and idx + 1 < len(tokens):
                     val = self._parse_amount(tokens[idx + 1]["text"])
                 if val is not None and subtotal is None:
                     subtotal = val
 
-            elif "TAX" in upper_text:
+            # Search Tax
+            elif any(k in upper_text for k in tax_keywords):
                 val = self._parse_amount(text)
                 if val is None and idx + 1 < len(tokens):
                     val = self._parse_amount(tokens[idx + 1]["text"])
                 if val is not None and tax is None:
                     tax = val
 
-            elif "TOTAL" in upper_text and "SUB" not in upper_text:
+            # Search Total
+            elif any(k in upper_text for k in total_keywords) and not any(k in upper_text for k in subtotal_keywords):
                 val = self._parse_amount(text)
                 if val is None and idx + 1 < len(tokens):
                     val = self._parse_amount(tokens[idx + 1]["text"])
