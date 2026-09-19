@@ -1,9 +1,9 @@
-﻿import sys
+import sys
 import argparse
 import subprocess
 import os
 
-BASE_DIR = r"E:\fraud Invoice&Receipt Detector"
+BASE_DIR = os.environ.get("BASE_DIR", os.path.dirname(os.path.abspath(__file__)))
 
 def run_cmd(cmd):
     env = os.environ.copy()
@@ -21,12 +21,16 @@ def main():
     parser.add_argument("--phase", type=int, choices=[1, 2, 3, 4, 5], help="Run a specific phase (1-5)")
     parser.add_argument("--all", action="store_true", help="Run complete pipeline sequentially")
     parser.add_argument("--serve", action="store_true", help="Launch FastAPI web dashboard")
+    parser.add_argument("--host", type=str, default=os.environ.get("HOST", "0.0.0.0"), help="Host IP to bind web dashboard")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)), help="Port to bind web dashboard")
+    parser.add_argument("--reload", action="store_true", help="Enable uvicorn autoreload")
     parser.add_argument("--test", action="store_true", help="Run automated test suite")
     args = parser.parse_args()
 
     if args.serve:
-        print("Starting FastAPI Web Dashboard on http://127.0.0.1:8000 ...")
-        run_cmd("python -m uvicorn src.backend.main:app --host 127.0.0.1 --port 8000 --reload")
+        reload_flag = "--reload" if args.reload else ""
+        print(f"Starting FastAPI Web Dashboard on http://{args.host}:{args.port} ...")
+        run_cmd(f"python -m uvicorn src.backend.main:app --host {args.host} --port {args.port} {reload_flag}".strip())
         return
 
     if args.test:

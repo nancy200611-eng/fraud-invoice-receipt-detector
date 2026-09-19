@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  fraud-detector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invoice_fraud_detector
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - BASE_DIR=/app
+    volumes:
+      # Persist the SQLite audit ledger and uploads across container restarts
+      - ./data:/app/data
+      # Mount model weights so you can update checkpoints without rebuilding images
+      - ./models:/app/models

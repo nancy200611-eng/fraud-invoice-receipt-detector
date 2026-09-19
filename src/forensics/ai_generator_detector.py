@@ -1,8 +1,10 @@
-﻿import os
+import os
 import re
 import cv2
 import numpy as np
 from PIL import Image
+from PIL.ExifTags import TAGS
+from src.forensics.approved_exif_registry import ApprovedExifRegistry
 
 class AIGeneratorDetector:
     """
@@ -34,6 +36,7 @@ class AIGeneratorDetector:
             "TextDiffuser / Inpainting": ["textdiffuser", "anytext", "inpaint", "deepfloyd"],
             "Online Receipt Builder": ["expressexpense", "invoicemaker", "samourai", "receiptmaker", "fakereceipt"]
         }
+        self.approved_registry = ApprovedExifRegistry()
 
     def inspect_metadata_and_signatures(self, image_path):
         detected_engines = []
@@ -76,10 +79,22 @@ class AIGeneratorDetector:
                     ai_score += 0.95
                     reasons.append("Contains AI diffusion prompt parameters (Steps, Sampler, Seed, CFG scale)")
 
-                # 3. Canvas Dimensions Check across all models
+                # 3. Canvas Dimensions Check across all models verified with Approved Registry
                 exif = img.getexif()
-                has_real_camera = any(tag in exif for tag in [271, 272, 305]) # Make, Model, Software
-                
+                exif_dict = {}
+                if exif:
+                    for tag_id, val in exif.items():
+                        tag_name = TAGS.get(tag_id, str(tag_id))
+                        if tag_name in ["Make", "Model", "Software"]:
+                            exif_dict[tag_name] = str(val)
+
+                whitelist_profile = self.approved_registry.evaluate_exif(exif_dict)
+                has_real_camera = (whitelist_profile is not None and not whitelist_profile.is_spoofed_attempt)
+
+                if whitelist_profile and whitelist_profile.is_spoofed_attempt:
+                    ai_score += 0.80
+                    reasons.append(f"Spoofed camera metadata detected: {whitelist_profile.spoof_reason}")
+
                 if (w, h) in self.ai_resolutions and not has_real_camera:
                     ai_score += 0.65
                     reasons.append(f"Fixed AI latent canvas dimensions ({w}x{h}) matching Midjourney / Stable Diffusion / DALL-E without physical camera EXIF metadata")
