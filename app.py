@@ -93,23 +93,23 @@ def analyze_receipt(image_path):
 
 # Example images
 examples = []
-sample_raw = os.path.join(BASE_DIR, "data", "raw", "invoice_0001.jpg")
-sample_fake = os.path.join(BASE_DIR, "data", "manipulated", "images", "fake_invoice_0001.jpg")
-if os.path.exists(sample_raw):
-    examples.append([sample_raw])
+sample_real = os.path.join(BASE_DIR, "sample_data", "sample_genuine.jpg")
+sample_fake = os.path.join(BASE_DIR, "sample_data", "sample_manipulated.jpg")
+if os.path.exists(sample_real):
+    examples.append([sample_real])
 if os.path.exists(sample_fake):
     examples.append([sample_fake])
 
-with gr.Blocks(title="Receipt & Invoice Fraud Detector") as demo:
+with gr.Blocks(title="Receipt & Invoice Fraud Detector", theme=gr.themes.Soft()) as demo:
     gr.Markdown("""
-    # ??? Receipt & Invoice Fraud Detection Platform
+    # 🛡️ Receipt & Invoice Fraud Detection Platform
     Upload any receipt or invoice to run **Deep Learning (ResNet-18 + Grad-CAM)**, **Digital Forensics (ELA & SRM)**, **EasyOCR extraction**, and **Business Math Ledger Auditing**.
     """)
 
     with gr.Row():
         with gr.Column():
             input_image = gr.Image(type="filepath", label="Upload Invoice / Receipt Image")
-            submit_btn = gr.Button("?? Analyze Document", variant="primary", size="lg")
+            submit_btn = gr.Button("🔍 Analyze Document", variant="primary", size="lg")
             
             if examples:
                 gr.Examples(
