@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 import sqlite3
 import hashlib
@@ -12,8 +12,12 @@ class HeuristicAuditEngine:
     - Duplicate detection: Flag reuse of same invoice ID or perceptual pHash by DIFFERENT submissions
     - Unusual amount and format verification
     """
-    def __init__(self, db_path=r"E:\fraud Invoice&Receipt Detector\data\audit_ledger.db"):
+    def __init__(self, db_path=None):
+        if db_path is None:
+            base_dir = os.environ.get("BASE_DIR", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            db_path = os.path.join(base_dir, "data", "audit_ledger.db")
         self.db_path = db_path
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_db()
 
     def _init_db(self):

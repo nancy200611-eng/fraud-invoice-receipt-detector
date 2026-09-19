@@ -1,4 +1,4 @@
-﻿import os
+import os
 import io
 import base64
 import shutil
@@ -30,14 +30,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = r"E:\fraud Invoice&Receipt Detector"
+BASE_DIR = os.environ.get(
+    "BASE_DIR",
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 UPLOAD_DIR = os.path.join(BASE_DIR, "data", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-SROIE_DIR = r"D:\SOIRE\ICDAR-2019-SROIE-master\data\img"
-REAL_INV_DIR = r"D:\Receipt-Invoice-fraud-detection\data\real\invoice"
-FAKE_INV_DIR = r"D:\Receipt-Invoice-fraud-detection\data\fake\invoice"
-FAKE_REC_DIR = r"D:\Receipt-Invoice-fraud-detection\data\fake\receipt"
+SROIE_DIR = os.environ.get("SROIE_DIR", r"D:\SOIRE\ICDAR-2019-SROIE-master\data\img")
+REAL_INV_DIR = os.environ.get("REAL_INV_DIR", r"D:\Receipt-Invoice-fraud-detection\data\real\invoice")
+FAKE_INV_DIR = os.environ.get("FAKE_INV_DIR", r"D:\Receipt-Invoice-fraud-detection\data\fake\invoice")
+FAKE_REC_DIR = os.environ.get("FAKE_REC_DIR", r"D:\Receipt-Invoice-fraud-detection\data\fake\receipt")
 
 print("Initializing Detection Engines...")
 c2pa_guard = C2PAExifFastGuard()
@@ -98,7 +101,10 @@ def process_document(image_path, filename):
     # FAST-PATH ZERO-LATENCY SHORT-CIRCUIT: C2PA & EXIF PROVENANCE
     # If C2PA or EXIF metadata says AI-generated -> don't waste time, flag instantly!
     # =========================================================================
-    is_fast_ai, fast_title, fast_explanation = c2pa_guard.evaluate_fast_path(image_path)
+    fast_res = c2pa_guard.evaluate_fast_path(image_path)
+    is_fast_ai, fast_title, fast_explanation = fast_res
+    diagnostics = getattr(fast_res, "diagnostics", {})
+
     if is_fast_ai:
         # Create an instant red warning overlay on the document
         alert_overlay = img_bgr.copy()
@@ -127,7 +133,7 @@ def process_document(image_path, filename):
             "verdict": "HIGH_FRAUD_RISK",
             "status_label": "Confirmed AI-Generated (C2PA / EXIF Fast-Path)",
             "badge_color": "red",
-            "summary": "Immediate Short-Circuit Rejection: The document contains verified C2PA Content Credentials or EXIF metadata explicitly proving it was created by an AI image generator. Processing halted immediately.",
+            "summary": "Immediate Short-Circuit Rejection: The document contains verified C2PA Content Credentials, truncated JUMBF blocks, or EXIF metadata proving synthetic media creation. Processing halted immediately.",
             "reasons": [{
                 "type": "C2PA_PROVENANCE_ALERT",
                 "severity": "CRITICAL",
@@ -135,6 +141,8 @@ def process_document(image_path, filename):
                 "explanation": fast_explanation
             }],
             "parsed_fields": {"invoice_number": "N/A (AI Generated)", "subtotal": None, "tax": None, "total": None},
+            "byte_offset_diagnostics": diagnostics.get("byte_offset_diagnostics", []),
+            "whitelist_status": diagnostics.get("whitelist_status"),
             "image_original": mat_to_base64(img_bgr),
             "image_highlighted": mat_to_base64(blended)
         }
@@ -266,6 +274,8 @@ def process_document(image_path, filename):
         "summary": summary,
         "reasons": reasons,
         "parsed_fields": parsed,
+        "byte_offset_diagnostics": diagnostics.get("byte_offset_diagnostics", []),
+        "whitelist_status": diagnostics.get("whitelist_status"),
         "image_original": mat_to_base64(img_bgr),
         "image_highlighted": mat_to_base64(gradcam_overlay)
     }
@@ -277,4 +287,6 @@ def serve_dashboard():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host=host, port=port)
